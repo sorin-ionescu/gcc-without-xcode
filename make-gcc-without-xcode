@@ -1,0 +1,235 @@
+#!/bin/zsh
+# ------------------------------------------------------------------------------
+#          FILE:  make-gcc-without-xcode
+#   DESCRIPTION:  Makes a GCC without Xcode archive.
+#        AUTHOR:  Sorin Ionescu <sorin.ionescu@gmail.com>
+# ------------------------------------------------------------------------------
+
+
+# Amend path for PlistBuddy.
+path+=( /usr/libexec/ )
+
+script_name="$( basename $0 )"
+script_version='1.0.0'
+xcode_installer='/Applications/Install Xcode.app'
+xcode_installer_plist="${xcode_installer}/Contents/Info.plist"
+xcode_installer_packages="${xcode_installer}/Contents/Resources/Packages"
+
+# Don't cd to ~ if no argument is given.
+function cd() {
+    if (( $# == 0 )); then
+        return 1;
+    else
+        builtin cd "$@"
+    fi
+}
+
+# Writes to standard error.
+function error() {
+    echo "$script_name: $@" >&2
+}
+
+# Writes to standard output.
+function info() {
+    echo "$@" >&1
+}
+
+# Writes version information to standard errror.
+function version() {
+    echo -e "$script_name $script_version
+
+Copyright (c) 2010 Sorin Ionescu
+
+This program is free software. You may modify or distribute it
+under the terms of the MIT License." >&2
+}
+
+# Writes help to standard error.
+function help() {
+    echo -e "Usage: $script_name [‐option ...]
+
+Options:
+    -v, --version          Display version and copyright.
+    -h, --help             Display this help.
+
+Report bugs to <sorin.ionescu@gmail.com>." >&2
+}
+
+# Parse switches.
+while [[ "$1" == -* ]]; do
+    case "$1" in
+        ( -v | --version )
+            version
+            exit 0
+        ;;
+        ( -h | --help )
+            help
+            exit 0
+        ;;
+        ( -- )
+            shift
+            break
+        ;;
+        ( -* )
+            error "invalid option: $1"
+            help
+            exit 1
+        ;;
+    esac
+done
+
+# Root is required to preserve permissions.
+if (( EUID != 0 )); then
+    error "$script_name requires root privileges. Running sudo..."
+    exec sudo "$0" $@
+    exit $?
+fi
+
+# Make sure the xcode_installer is not missing before continuing.
+if [[ ! -d "$xcode_installer" ]]; then
+    error "'${xcode_installer}' not found."
+    exit 1
+fi
+
+xcode_version="$( PlistBuddy -c 'Print :CFBundleShortVersionString' "$xcode_installer_plist" )"
+mac_osx_version="$( PlistBuddy -c 'Print :LSMinimumSystemVersion' "$xcode_installer_plist" )"
+archive_prefix="${PWD}/${script_name#make-}-${xcode_version}-mac-os-x-${mac_osx_version}"
+
+packages=(
+    'BluetoothSDK.pkg'
+    'CoreAudioSDK.pkg'
+    'DevSDK.pkg'
+    'DistributedBuildsSupport.pkg'
+    'DeveloperToolsCLI.pkg'
+    'DeveloperToolsSystemSupport.pkg'
+    'FireWireSDK.pkg'
+    'JavaSDK.pkg'
+    'OpenGLSDK.pkg'
+    'QuickTimeSDK.pkg'
+    'WebKitSDK.pkg'
+    'X11Documentation.pkg'
+    'X11SDK.pkg'
+    'clang.pkg'
+    'gcc4.2.pkg'
+    'llvm-gcc4.2.pkg'
+)
+
+# Make sure packages are not missing before continuing.
+for package in $packages; do
+    if [[ ! -e "${xcode_installer_packages}/${package}" ]]; then
+        error "Package '${package}' is missing. Xcode Installer is corrupt."
+        exit 1
+    fi
+done
+
+# Not every package has to be fully intalled.
+typeset -A package_root package_includes package_excludes
+
+package_root[MacOSX10.7.pkg]='/SDKs/MacOSX10.7.sdk'
+
+# Excludes
+package_excludes[DeveloperToolsCLI.pkg]='
+Library
+'
+
+# Includes
+package_includes[DeveloperToolsSystemSupport.pkg]='
+private/etc/gdb.conf
+usr/bin/xcode-select
+usr/share/man/man1/xcode-select.1
+usr/share/xcode-select
+'
+
+payload_file_dir=$( mktemp -d -t "$script_name" )
+payload_data_dir=$( mktemp -d -t "$script_name" )
+package_merge_dir=$( mktemp -d -t "$script_name" )
+
+info "Extracting:"
+for package in $packages; do
+    info "  $package"
+
+    # Set full path to package.
+    package_path="${xcode_installer_packages}/${package}"
+
+    # Extract Payload file from package.
+    ( cd "$payload_file_dir" && xar -x -f "$package_path" Payload )
+
+    # ZSH does not support array of arrays; fake it.
+    included_files=( ${(ps:\n:)package_includes[$package]} )
+    excluded_files=( ${(ps:\n:)package_excludes[$package]} )
+
+    # Prepend the -f cpio switch to each item.
+    index=1
+    length=$(( $#excluded_files * 2 ))
+    while (( $index <= $length )); do
+        excluded_files[$index]=( '-f' "$excluded_files[$index]" )
+        (( index += 2 ))
+    done
+
+    # Extract Payload file.
+    ( cd "$payload_data_dir" \
+          && gzcat < "${payload_file_dir}/Payload" \
+          | cpio -idm $excluded_files $included_files 2>/dev/null )
+
+    # Merge package files.
+    ditto "${payload_data_dir}${package_root[$package]}" "$package_merge_dir"
+
+    # Clean directories for next package.
+    for dirty_dir in "$payload_file_dir" "$payload_data_dir"; do
+        ( cd "$dirty_dir" && find . -path './*' -maxdepth 1 -exec rm -rf '{}' \; )
+    done
+done
+
+# Do not overwrite existing files.
+info 'Purging:'
+info '  Existing Files'
+( cd "$package_merge_dir" || exit
+  # Find all files and replace './' with '/'.
+  for existing_file in $(find . ! -type d | sed -e 's:^\.::g'); do
+      if [[ -e "${existing_file}" ]] || [[ -L "${existing_file}" ]]; then
+          # Delete all existing files (replace '/' with './').
+          rm -f ".${existing_file}"
+      fi
+  done )
+
+info 'Configuring:'
+info '  Xcode Directory Path'
+# Xcode root is now /, not /Developer (can be set with xcode-select).
+if [[ -f "${package_merge_dir}/usr/share/xcode-select/xcode_dir_path" ]]; then
+    echo '/' > "${package_merge_dir}/usr/share/xcode-select/xcode_dir_path"
+fi
+
+# Use high compression.
+if (( $+commands[xz] )); then
+    archive="${archive_prefix}.cpio.xz"
+    compressor='xz'
+else
+    archive="${archive_prefix}.cpio.gz"
+    compressor='gzip'
+fi
+
+info "Archiving:"
+info "  $archive"
+
+# Do not archive the directory, only the contents,
+# or risk having tar change / permissions,
+# and crash the system until fixed.
+( cd "$package_merge_dir" \
+    && ls -1A \
+    | xargs -I% find '%' -depth -print0 \
+    | cpio -0o 2>/dev/null \
+    | "$compressor" -9 > "$archive" )
+
+info 'Purging:'
+info '  Temporary Files'
+rm -rf "$payload_file_dir" "$payload_data_dir" "$package_merge_dir"
+
+if [[ "$archive" == *.xz ]]; then
+    decompressor='xzcat'
+else
+    decompressor='gzcat'
+fi
+
+info 'Install:'
+info "  cd / && "$decompressor" < '$archive' | sudo cpio -idmv"
+
