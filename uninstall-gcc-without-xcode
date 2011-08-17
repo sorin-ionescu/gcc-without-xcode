@@ -5,7 +5,7 @@
 #        AUTHOR:  Sorin Ionescu <sorin.ionescu@gmail.com>
 # ------------------------------------------------------------------------------
 
-script_name="$( basename $0 )"
+script_name="$0:t"
 script_version='1.0.0'
 cached_argv="$argv"
 
@@ -74,7 +74,7 @@ else
         help
         exit 1
     else
-        archive="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
+        archive="$(cd "$1:h" && pwd)/$1:t"
         if [[ "$archive" == *.xz ]]; then
             if (( ! $+commands[xzcat] )); then
                 error "Cannot extract '$archive' because XZ Utils are not installed."
