@@ -180,6 +180,16 @@ for package in $packages; do
     done
 done
 
+# Homebrew needs to know the Xcode version.
+info 'Generating:'
+info '  Dummy Xcode Files'
+xcodebuild_file="${package_merge_dir}/usr/bin/xcodebuild"
+cat <<-END
+#!/bin/sh
+Xcode $xcode_version
+END >! $xcodebuild_file
+chmod 755 $xcodebuild_file
+
 # Do not overwrite existing files.
 info 'Purging:'
 info '  Existing Files'
