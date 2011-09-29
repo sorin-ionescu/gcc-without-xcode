@@ -193,7 +193,7 @@ chmod 755 "${xcodebuild_file}"
 # Do not overwrite existing files.
 print-info 'Purging:'
 print-info '  Existing Files'
-( cd "${package_merge_dir}" || exit
+( cd "${package_merge_dir}" || exit 1
   # Find all files and replace './' with '/'.
   for existing_file in "$(find . ! -type d | sed -e 's:^\.::g')"; do
       if [[ -e "${existing_file}" ]] || [[ -L "${existing_file}" ]]; then
