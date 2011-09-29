@@ -10,12 +10,12 @@ script_version='1.0.1'
 cached_argv="${argv}"
 
 # Writes to standard error.
-function error() {
+function print-error() {
     echo "${script_name}: ${@}" >&2
 }
 
 # Writes to standard output.
-function info() {
+function print-info() {
     echo "${@}" >&1
 }
 
@@ -56,7 +56,7 @@ while [[ "${1}" == -* ]]; do
             break
         ;;
         ( -* )
-            error "invalid option: ${1}"
+            print-error "invalid option: ${1}"
             help
             exit 0
         ;;
@@ -65,19 +65,19 @@ done
 
 # Get archive.
 if (( ${#} < 1 )); then
-    error "No archive given."
+    print-error "No archive given."
     help
     exit 1
 else
     if [[ ! -e "${1}" ]]; then
-        error "Archive '${1}' does not exist."
+        print-error "Archive '${1}' does not exist."
         help
         exit 1
     else
         archive="$(cd "${1:h}" && pwd)/${1:t}"
         if [[ "${archive}" == *.xz ]]; then
             if (( ! ${+commands[xzcat]} )); then
-                error "Cannot extract '${archive}' because XZ Utils are not installed."
+                print-error "Cannot extract '${archive}' because XZ Utils are not installed."
                 exit 1
             else
                 decompressor='xzcat'
@@ -91,11 +91,11 @@ fi
 
 # Get directory.
 if (( ${#} < 1 )); then
-    error "No directory given, assuming /."
+    print-error "No directory given, assuming /."
     directory='/'
 else
     if [[ ! -e "${1}" ]]; then
-        error "Directory '${1}' does not exist."
+        print-error "Directory '${1}' does not exist."
         help
         exit 1
     else
@@ -106,13 +106,13 @@ fi
 
 # Root is required to install.
 if [[ ! -w "${directory}" ]]; then
-    error "${script_name} requires root privileges. Running sudo..."
+    print-error "${script_name} requires root privileges. Running sudo..."
     exec sudo "${0}" "${cached_argv[@]}"
     exit ${?}
 fi
 
-info "Installing:"
-info "  ${archive}"
+print-info "Installing:"
+print-info "  ${archive}"
 cd "${directory}" \
     && "${decompressor}" < "${archive}" \
     | cpio -idm 2> /dev/null

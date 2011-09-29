@@ -25,12 +25,12 @@ function cd() {
 }
 
 # Writes to standard error.
-function error() {
+function print-error() {
     echo "${script_name}: ${@}" >&2
 }
 
 # Writes to standard output.
-function info() {
+function print-info() {
     echo "${@}" >&1
 }
 
@@ -71,7 +71,7 @@ while [[ "${1}" == -* ]]; do
             break
         ;;
         ( -* )
-            error "invalid option: ${1}"
+            print-error "invalid option: ${1}"
             help
             exit 1
         ;;
@@ -80,14 +80,14 @@ done
 
 # Root is required to preserve permissions.
 if (( ${EUID} != 0 )); then
-    error "${script_name} requires root privileges. Running sudo..."
+    print-error "${script_name} requires root privileges. Running sudo..."
     exec sudo "${0}" "${@}"
     exit "${?}"
 fi
 
 # Make sure the xcode_installer is not missing before continuing.
 if [[ ! -d "${xcode_installer}" ]]; then
-    error "'${xcode_installer}' not found."
+    print-error "'${xcode_installer}' not found."
     exit 1
 fi
 
@@ -117,7 +117,7 @@ packages=(
 # Make sure packages are not missing before continuing.
 for package in "${packages[@]}"; do
     if [[ ! -e "${xcode_installer_packages}/${package}" ]]; then
-        error "Package '${package}' is missing. Xcode Installer is corrupt."
+        print-error "Package '${package}' is missing. Xcode Installer is corrupt."
         exit 1
     fi
 done
@@ -144,9 +144,9 @@ payload_file_dir="$( mktemp -d -t "${script_name}" )"
 payload_data_dir="$( mktemp -d -t "${script_name}" )"
 package_merge_dir="$( mktemp -d -t "${script_name}" )"
 
-info "Extracting:"
+print-info "Extracting:"
 for package in "${packages[@]}"; do
-    info "  ${package}"
+    print-info "  ${package}"
 
     # Set full path to package.
     package_path="${xcode_installer_packages}/${package}"
@@ -181,8 +181,8 @@ for package in "${packages[@]}"; do
 done
 
 # Homebrew needs to know the Xcode version.
-info 'Generating:'
-info '  Dummy Xcode Files'
+print-info 'Generating:'
+print-info '  Dummy Xcode Files'
 xcodebuild_file="${package_merge_dir}/usr/bin/xcodebuild"
 cat <<-END
 #!/bin/sh
@@ -191,8 +191,8 @@ END > "${xcodebuild_file}"
 chmod 755 "${xcodebuild_file}"
 
 # Do not overwrite existing files.
-info 'Purging:'
-info '  Existing Files'
+print-info 'Purging:'
+print-info '  Existing Files'
 ( cd "${package_merge_dir}" || exit
   # Find all files and replace './' with '/'.
   for existing_file in "$(find . ! -type d | sed -e 's:^\.::g')"; do
@@ -202,8 +202,8 @@ info '  Existing Files'
       fi
   done )
 
-info 'Configuring:'
-info '  Xcode Directory Path'
+print-info 'Configuring:'
+print-info '  Xcode Directory Path'
 # Xcode root is now /, not /Developer (can be set with xcode-select).
 if [[ -f "${package_merge_dir}/usr/share/xcode-select/xcode_dir_path" ]]; then
     echo '/' > "${package_merge_dir}/usr/share/xcode-select/xcode_dir_path"
@@ -218,8 +218,8 @@ else
     compressor='gzip'
 fi
 
-info "Archiving:"
-info "  ${archive}"
+print-info "Archiving:"
+print-info "  ${archive}"
 
 # Do not archive the directory, only the contents,
 # or risk having tar change / permissions,
@@ -230,8 +230,8 @@ info "  ${archive}"
     | cpio -0o 2> /dev/null \
     | "${compressor}" -9 > "${archive}" )
 
-info 'Purging:'
-info '  Temporary Files'
+print-info 'Purging:'
+print-info '  Temporary Files'
 rm -rf "${payload_file_dir}" "${payload_data_dir}" "${package_merge_dir}"
 
 if [[ "${archive}" == *.xz ]]; then
@@ -240,6 +240,6 @@ else
     decompressor='gzcat'
 fi
 
-info 'Install:'
-info "  cd / && "${decompressor}" < '${archive}' | sudo cpio -idmv"
+print-info 'Install:'
+print-info "  cd / && "${decompressor}" < '${archive}' | sudo cpio -idmv"
 
