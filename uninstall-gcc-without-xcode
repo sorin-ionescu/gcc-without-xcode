@@ -5,23 +5,23 @@
 #        AUTHOR:  Sorin Ionescu <sorin.ionescu@gmail.com>
 # ------------------------------------------------------------------------------
 
-script_name="$0:t"
-script_version='1.0.0'
-cached_argv="$argv"
+script_name="${0:t}"
+script_version='1.0.1'
+cached_argv="${argv}"
 
 # Writes to standard error.
 function error() {
-    echo "$script_name: $@" >&2
+    echo "${script_name}: ${@}" >&2
 }
 
 # Writes to standard output.
 function info() {
-    echo "$@" >&1
+    echo "${@}" >&1
 }
 
 # Writes version information to standard errror.
 function version() {
-    echo -e "$script_name $script_version
+    echo -e "${script_name} ${script_version}
 
 Copyright (c) 2011 Sorin Ionescu
 
@@ -31,7 +31,7 @@ under the terms of the MIT License." >&2
 
 # Writes help to standard error.
 function help() {
-    echo -e "Usage: $script_name [‐option ...] archive [directory]
+    echo -e "Usage: ${script_name} [‐option ...] archive [directory]
 
 Options:
     -v, --version          Display version and copyright.
@@ -41,8 +41,8 @@ Report bugs to <sorin.ionescu@gmail.com>." >&2
 }
 
 # Parse switches.
-while [[ "$1" == -* ]]; do
-    case "$1" in
+while [[ "${1}" == -* ]]; do
+    case "${1}" in
         ( -v | --version )
             version
             exit 0
@@ -56,7 +56,7 @@ while [[ "$1" == -* ]]; do
             break
         ;;
         ( -* )
-            error "invalid option: $1"
+            error "invalid option: ${1}"
             help
             exit 0
         ;;
@@ -64,20 +64,20 @@ while [[ "$1" == -* ]]; do
 done
 
 # Get archive.
-if (( $# < 1 )); then
+if (( ${#} < 1 )); then
     error "No archive given."
     help
     exit 1
 else
-    if [[ ! -e "$1" ]]; then
-        error "Archive '$1' does not exist."
+    if [[ ! -e "${1}" ]]; then
+        error "Archive '${1}' does not exist."
         help
         exit 1
     else
-        archive="$(cd "$1:h" && pwd)/$1:t"
-        if [[ "$archive" == *.xz ]]; then
-            if (( ! $+commands[xzcat] )); then
-                error "Cannot extract '$archive' because XZ Utils are not installed."
+        archive="$(cd "${1:h}" && pwd)/${1:t}"
+        if [[ "${archive}" == *.xz ]]; then
+            if (( ! ${+commands[xzcat]} )); then
+                error "Cannot extract '${archive}' because XZ Utils are not installed."
                 exit 1
             else
                 decompressor='xzcat'
@@ -90,59 +90,59 @@ else
 fi
 
 # Get directory.
-if (( $# < 1 )); then
+if (( ${#} < 1 )); then
     error "No directory given, assuming /."
     directory='/'
 else
-    if [[ ! -e "$1" ]]; then
-        error "Directory '$1' does not exist."
+    if [[ ! -e "${1}" ]]; then
+        error "Directory '${1}' does not exist."
         help
         exit 1
     else
-        directory="$1"
+        directory="${1}"
         shift
     fi
 fi
 
 # Root is required to uninstall.
-if [[ ! -w "$directory" ]]; then
-    error "$script_name requires root privileges. Running sudo..."
-    exec sudo "$0" $cached_argv
-    exit $?
+if [[ ! -w "${directory}" ]]; then
+    error "${script_name} requires root privileges. Running sudo..."
+    exec sudo "${0}" "${cached_argv[@]}"
+    exit ${?}
 fi
 
 # Directories will be deleted last.
 directories="$(mktemp -t uninstall-gcc-without-xcode.directories)"
 
 # Change CWD to installation directory.
-cd "$directory"
+cd "${directory}"
 
 info 'Purging:'
 info '  Files'
 while read item; do
-    if [[ -L "$item" ]]; then
-        unlink $item""
-    elif [[ -f "$item" ]]; then
-        rm -f "$item"
+    if [[ -L "${item}" ]]; then
+        unlink "${item}"
+    elif [[ -f "${item}" ]]; then
+        rm -f "${item}"
     else
-        if [[ -d "$item" ]]; then
-            echo "$item" >> $directories
+        if [[ -d "${item}" ]]; then
+            echo "${item}" >> "${directories}"
         fi
     fi
-done < <( "$decompressor" < "$archive" | cpio -it 2>/dev/null | sed -e 's:/*$::g' )
+done < <( "${decompressor}" < "${archive}" | cpio -it 2> /dev/null | sed -e 's:/*$::g' )
 
 info '  Directories'
 while read item; do
     ds_store="${item}/.DS_Store"
-    if [[ -f "$ds_store" ]]; then
-        rm -f "$ds_store"
+    if [[ -f "${ds_store}" ]]; then
+        rm -f "${ds_store}"
     fi
 
-    if [[ -n "$(find "$item" -type d -maxdepth 0 -empty 2>/dev/null)" ]]; then
-       rmdir $item
+    if [[ -n "$(find "${item}" -type d -maxdepth 0 -empty 2> /dev/null)" ]]; then
+       rmdir "${item}"
     fi
-done < $directories
+done < "${directories}"
 
 info '  Temporary Files'
-rm $directories
+rm "${directories}"
 
