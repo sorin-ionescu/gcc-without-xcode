@@ -10,7 +10,7 @@
 path+=( /usr/libexec/ )
 
 script_name="${0:t}"
-script_version='1.0.1'
+script_version='1.0.2'
 xcode_installer='/Applications/Install Xcode.app'
 xcode_installer_plist="${xcode_installer}/Contents/Info.plist"
 xcode_installer_packages="${xcode_installer}/Contents/Resources/Packages"

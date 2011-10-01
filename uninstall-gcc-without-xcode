@@ -6,7 +6,7 @@
 # ------------------------------------------------------------------------------
 
 script_name="${0:t}"
-script_version='1.0.1'
+script_version='1.0.2'
 cached_argv="${argv}"
 
 # Writes to standard error.
