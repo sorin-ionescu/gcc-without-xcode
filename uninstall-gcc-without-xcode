@@ -1,7 +1,7 @@
 #!/bin/zsh
 # ------------------------------------------------------------------------------
 #          FILE:  uninstall-gcc-without-xcode
-#   DESCRIPTION:  Uninstalls GCC Without Xcode. 
+#   DESCRIPTION:  Uninstalls GCC Without Xcode.
 #        AUTHOR:  Sorin Ionescu <sorin.ionescu@gmail.com>
 # ------------------------------------------------------------------------------
 
