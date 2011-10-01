@@ -184,10 +184,9 @@ done
 print-info 'Generating:'
 print-info '  Dummy Xcode Files'
 xcodebuild_file="${package_merge_dir}/usr/bin/xcodebuild"
-cat <<-END
-#!/bin/sh
-Xcode ${xcode_version}
-END > "${xcodebuild_file}"
+mkdir -p "${xcodebuild_file:h}"
+echo '#!/bin/sh' >> "${xcodebuild_file}"
+echo "Xcode ${xcode_version}" >> "${xcodebuild_file}"
 chmod 755 "${xcodebuild_file}"
 
 # Do not overwrite existing files.
