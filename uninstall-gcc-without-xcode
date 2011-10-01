@@ -11,17 +11,17 @@ cached_argv="${argv}"
 
 # Writes to standard error.
 function print-error() {
-    echo "${script_name}: ${@}" >&2
+    print "${script_name}: ${@}" >&2
 }
 
 # Writes to standard output.
 function print-info() {
-    echo "${@}" >&1
+    print "${@}" >&1
 }
 
 # Writes version information to standard errror.
 function version() {
-    echo -e "${script_name} ${script_version}
+    print "${script_name} ${script_version}
 
 Copyright (c) 2011 Sorin Ionescu
 
@@ -31,7 +31,7 @@ under the terms of the MIT License." >&2
 
 # Writes help to standard error.
 function help() {
-    echo -e "Usage: ${script_name} [‐option ...] archive [directory]
+    print "Usage: ${script_name} [‐option ...] archive [directory]
 
 Options:
     -v, --version          Display version and copyright.
@@ -126,7 +126,7 @@ while read item; do
         rm -f "${item}"
     else
         if [[ -d "${item}" ]]; then
-            echo "${item}" >> "${directories}"
+            print "${item}" >> "${directories}"
         fi
     fi
 done < <( "${decompressor}" < "${archive}" | cpio -it 2> /dev/null | sed -e 's:/*$::g' )

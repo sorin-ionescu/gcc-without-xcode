@@ -26,17 +26,17 @@ function cd() {
 
 # Writes to standard error.
 function print-error() {
-    echo "${script_name}: ${@}" >&2
+    print "${script_name}: ${@}" >&2
 }
 
 # Writes to standard output.
 function print-info() {
-    echo "${@}" >&1
+    print "${@}" >&1
 }
 
 # Writes version information to standard errror.
 function version() {
-    echo -e "${script_name} ${script_version}
+    print "${script_name} ${script_version}
 
 Copyright (c) 2011 Sorin Ionescu
 
@@ -46,7 +46,7 @@ under the terms of the MIT License." >&2
 
 # Writes help to standard error.
 function help() {
-    echo -e "Usage: ${script_name} [‐option ...]
+    print "Usage: ${script_name} [‐option ...]
 
 Options:
     -v, --version          Display version and copyright.
@@ -185,8 +185,8 @@ print-info 'Generating:'
 print-info '  Dummy Xcode Files'
 xcodebuild_file="${package_merge_dir}/usr/bin/xcodebuild"
 mkdir -p "${xcodebuild_file:h}"
-echo '#!/bin/sh' >> "${xcodebuild_file}"
-echo "Xcode ${xcode_version}" >> "${xcodebuild_file}"
+print '#!/bin/sh' >> "${xcodebuild_file}"
+print "Xcode ${xcode_version}" >> "${xcodebuild_file}"
 chmod 755 "${xcodebuild_file}"
 
 # Do not overwrite existing files.
@@ -205,7 +205,7 @@ print-info 'Configuring:'
 print-info '  Xcode Directory Path'
 # Xcode root is now /, not /Developer (can be set with xcode-select).
 if [[ -f "${package_merge_dir}/usr/share/xcode-select/xcode_dir_path" ]]; then
-    echo '/' > "${package_merge_dir}/usr/share/xcode-select/xcode_dir_path"
+    print '/' > "${package_merge_dir}/usr/share/xcode-select/xcode_dir_path"
 fi
 
 # Use high compression.
