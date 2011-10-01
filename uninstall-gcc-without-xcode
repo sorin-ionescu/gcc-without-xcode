@@ -106,7 +106,7 @@ fi
 
 # Root is required to uninstall.
 if [[ ! -w "${directory}" ]]; then
-    print-error "${script_name} requires root privileges. Running sudo..."
+    print-info "Root privileges are required; running sudo..."
     exec sudo "${0}" "${cached_argv[@]}"
     exit ${?}
 fi

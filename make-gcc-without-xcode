@@ -80,7 +80,7 @@ done
 
 # Root is required to preserve permissions.
 if (( ${EUID} != 0 )); then
-    print-error "${script_name} requires root privileges. Running sudo..."
+    print-info "Root privileges are required; running sudo..."
     exec sudo "${0}" "${@}"
     exit "${?}"
 fi
