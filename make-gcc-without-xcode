@@ -143,9 +143,11 @@ for package in "${packages[@]}"; do
     package_path="${xcode_installer_packages}/${package}"
 
     # Extract Payload file from package.
-    ( [[ -n "${payload_file_dir}" ]] \
-        && cd "${payload_file_dir}" \
-        && xar -x -f "${package_path}" Payload )
+    (
+        [[ -n "${payload_file_dir}" ]] || continue
+        cd "${payload_file_dir}" || continue
+        xar -x -f "${package_path}" Payload
+    )
 
     # Zsh does not support array of arrays; fake it.
     included_files=( ${(ps:\n:)package_includes[${package}]} )
@@ -160,19 +162,23 @@ for package in "${packages[@]}"; do
     done
 
     # Extract Payload file.
-    ( [[ -n "${payload_data_dir}" ]] \
-        && cd "${payload_data_dir}" \
-        && gzcat < "${payload_file_dir}/Payload" \
-        | cpio -idm ${excluded_files} ${included_files} 2>/dev/null )
+    (
+        [[ -n "${payload_data_dir}" ]] || continue
+        cd "${payload_data_dir}" || continue
+        gzcat < "${payload_file_dir}/Payload" \
+            | cpio -idm ${excluded_files} ${included_files} 2> /dev/null
+    )
 
     # Merge package files.
     ditto "${payload_data_dir}${package_root[${package}]}" "${package_merge_dir}"
 
     # Clean directories for next package.
     for dirty_dir in "${payload_file_dir}" "${payload_data_dir}"; do
-        ( [[ -n "${dirty_dir}" ]] \
-            && cd "${dirty_dir}" \
-            && find . -path './*' -maxdepth 1 -exec rm -rf '{}' \; )
+        (
+            [[ -n "${dirty_dir}" ]] || continue
+            cd "${dirty_dir}" || continue
+            find . -path './*' -maxdepth 1 -exec rm -rf '{}' \;
+        )
     done
 done
 
@@ -222,12 +228,14 @@ print-info "  ${archive}"
 # Do not archive the directory, only the contents,
 # or risk having tar change / permissions,
 # and crash the system until fixed.
-( [[ -n "${package_merge_dir}" ]] \
-    && cd "${package_merge_dir}" \
-    && ls -1A \
-    | xargs -I% find '%' -depth -print0 \
-    | cpio -0o 2> /dev/null \
-    | "${compressor}" -9 > "${archive}" )
+(
+    [[ -n "${package_merge_dir}" ]] || exit 1
+    cd "${package_merge_dir}" || exit 1
+    ls -1A \
+        | xargs -I% find '%' -depth -print0 \
+        | cpio -0o 2> /dev/null \
+        | "${compressor}" -9 > "${archive}"
+)
 
 print-info 'Purging:'
 print-info '  Temporary Files'
