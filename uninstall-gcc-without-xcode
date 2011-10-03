@@ -34,8 +34,8 @@ function help() {
     print "Usage: ${script_name} [‐option ...] archive [directory]
 
 Options:
-    -v, --version          Display version and copyright.
-    -h, --help             Display this help.
+    -v, --version          Display version and copyright
+    -h, --help             Display this help
 
 Report bugs to <sorin.ionescu@gmail.com>." >&2
 }
