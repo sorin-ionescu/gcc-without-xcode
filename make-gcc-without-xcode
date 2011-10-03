@@ -148,8 +148,8 @@ for package in "${packages[@]}"; do
         && xar -x -f "${package_path}" Payload )
 
     # Zsh does not support array of arrays; fake it.
-    included_files=( "${(ps:\n:)package_includes[${package}]}" )
-    excluded_files=( "${(ps:\n:)package_excludes[${package}]}" )
+    included_files=( ${(ps:\n:)package_includes[${package}]} )
+    excluded_files=( ${(ps:\n:)package_excludes[${package}]} )
 
     # Prepend the -f cpio switch to each item.
     index=1
