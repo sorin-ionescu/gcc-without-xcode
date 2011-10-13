@@ -10,7 +10,7 @@
 path+=( /usr/libexec/ )
 
 script_name="${0:t}"
-script_version='1.0.2'
+script_version='1.0.3'
 xcode_installer='/Applications/Install Xcode.app'
 xcode_installer_plist="${xcode_installer}/Contents/Info.plist"
 xcode_installer_packages="${xcode_installer}/Contents/Resources/Packages"
@@ -101,7 +101,6 @@ packages=(
     'X11Documentation.pkg'
     'X11SDK.pkg'
     'clang.pkg'
-    'gcc4.2.pkg'
     'llvm-gcc4.2.pkg'
 )
 
