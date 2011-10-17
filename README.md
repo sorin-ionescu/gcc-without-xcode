@@ -32,11 +32,11 @@ Alternatively, install the archive with the convenience script.
 
 ### Smaller Archive
 
-To create the 72.47% smaller, but less portable, _.cpio.xz_ archive, download [XZ Utils](http://afb.users.sourceforge.net/xz/). Do not download XZ.dmg, which contains an installer that will install the utilities in /usr/local. This is unnecessary since XZ can be installed later from MacPorts or Homebrew. Instead, download **XZ.tbz**, which contains binaries that can be simply extracted. Amend the `PATH` with the location to the XZ Utils.
+To create the 72.47% smaller, but less portable, _.cpio.xz_ archive, download and install [XZ Utils](http://afb.users.sourceforge.net/xz/) and amend the `PATH` with the location of the XZ Utils.
 
-    export PATH=$HOME/Downloads/XZ/bin:$PATH
+    export PATH=/usr/local/bin:$PATH
 
-  The make script will automatically detect XZ and use it instead of gzip. Replace .gz with .xz in the above installation instructions.
+The make script will automatically detect XZ and use it instead of gzip. Replace .gz with .xz in the above installation instructions.
 
 ## Uninstall
 
