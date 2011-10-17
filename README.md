@@ -10,7 +10,7 @@ Download [Install Xcode.app](http://itunes.apple.com/us/app/xcode/id448457090?mt
 
 ![Get Xcode from the App Store](http://i.imgur.com/zcRkN.jpg)
 
-Download this project and copy the scripts somewhere in the `PATH` or leave them where they are and amend the it.
+Download this project and copy the scripts somewhere in the `PATH` or leave them where they are and amend it.
 
     export PATH=$HOME/Downloads/gcc-without-xcode:$PATH.
 
