@@ -6,6 +6,10 @@ This project provides a script that will reduce [Install Xcode.app](http://itune
 
 ## Install
 
+It is best to run the `make-gcc-without-xcode` script on a pristine installation of Mac OS X since the Xcode uninstaller leaves cruft behind; however, if you already have Xcode installed, run the following command, where `<Xcode>` is the Xcode installation directory, usually _/Developer_, to uninstall it.
+
+    sudo <Xcode>/Library/uninstall-devtools --mode=all
+
 Download [Install Xcode.app](http://itunes.apple.com/us/app/xcode/id448457090?mt=12) from the Mac App Store.
 
 ![Get Xcode from the App Store](http://i.imgur.com/zcRkN.jpg)
