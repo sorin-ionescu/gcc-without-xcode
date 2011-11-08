@@ -10,7 +10,7 @@
 path+=( /usr/libexec/ )
 
 script_name="${0:t}"
-script_version='1.0.3'
+script_version='1.0.4'
 xcode_installer='/Applications/Install Xcode.app'
 xcode_installer_plist="${xcode_installer}/Contents/Info.plist"
 xcode_installer_packages="${xcode_installer}/Contents/Resources/Packages"
@@ -187,7 +187,7 @@ print-info '  Dummy Xcode Files'
 xcodebuild_file="${package_merge_dir}/usr/bin/xcodebuild"
 mkdir -p "${xcodebuild_file:h}"
 print '#!/bin/sh' >> "${xcodebuild_file}"
-print "Xcode ${xcode_version}" >> "${xcodebuild_file}"
+print "echo 'Xcode ${xcode_version}'" >> "${xcodebuild_file}"
 chmod 755 "${xcodebuild_file}"
 
 # Do not overwrite existing files.
