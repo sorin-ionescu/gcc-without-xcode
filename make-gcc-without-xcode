@@ -10,10 +10,16 @@
 path+=( /usr/libexec/ )
 
 script_name="${0:t}"
-script_version='1.0.4'
-xcode_installer='/Applications/Install Xcode.app'
-xcode_installer_plist="${xcode_installer}/Contents/Info.plist"
-xcode_installer_packages="${xcode_installer}/Contents/Resources/Packages"
+script_version='1.0.5'
+disk_image_name="command_line_tools_for_xcode.dmg"
+disk_image_label="Command Line Tools"
+disk_image_mount_point="/Volumes/${disk_image_label}"
+disk_image_packages="${disk_image_mount_point}/Packages"
+disk_image_path="$(
+    mdfind -0 "
+      kMDItemFSName:${disk_image_name}
+      kMDItemKind:Disk Image" \
+    | xargs -0 ls -Ttr)"
 
 # Writes to standard error.
 function print-error() {
@@ -76,23 +82,29 @@ if (( ${EUID} != 0 )); then
     exit "${?}"
 fi
 
-# Make sure the xcode_installer is not missing before continuing.
-if [[ ! -d "${xcode_installer}" ]]; then
-    print-error "'${xcode_installer}' not found."
+# Make sure the disk image is not missing before continuing.
+if [[ ! -f "${disk_image_path}" ]]; then
+    print-error "'${disk_image_name}' not found"
     exit 1
 fi
 
-xcode_version="$( PlistBuddy -c 'Print :CFBundleShortVersionString' "${xcode_installer_plist}" )"
-mac_osx_version="$( PlistBuddy -c 'Print :LSMinimumSystemVersion' "${xcode_installer_plist}" )"
+print-info "Mounting:"
+print-info "  ${disk_image_path}"
+hdiutil mount -quiet "${disk_image_path}"
+if (( $? != 0 )); then
+  print-error "'${disk_image_name}' cannot be mounted"
+  exit 1
+fi
+
+#disk_image_version="$( PlistBuddy -c 'Print :CFBundleShortVersionString' "${xcode_installer_plist}" )"
+#mac_osx_version="$( PlistBuddy -c 'Print :LSMinimumSystemVersion' "${xcode_installer_plist}" )"
 archive_prefix="${PWD}/${script_name#make-}-${xcode_version}-mac-os-x-${mac_osx_version}"
 
 packages=(
     'BluetoothSDK.pkg'
     'CoreAudioSDK.pkg'
     'DevSDK.pkg'
-    'DistributedBuildsSupport.pkg'
     'DeveloperToolsCLI.pkg'
-    'DeveloperToolsSystemSupport.pkg'
     'FireWireSDK.pkg'
     'JavaSDK.pkg'
     'OpenGLSDK.pkg'
@@ -106,29 +118,14 @@ packages=(
 
 # Make sure packages are not missing before continuing.
 for package in "${packages[@]}"; do
-    if [[ ! -e "${xcode_installer_packages}/${package}" ]]; then
-        print-error "Package '${package}' is missing. Xcode Installer is corrupt."
+    if [[ ! -e "${disk_image_packages}/${package}" ]]; then
+        print-error "Package '${package}' is missing. Xcode Installer is corrupt"
         exit 1
     fi
 done
 
 # Not every package has to be fully intalled.
 typeset -A package_root package_includes package_excludes
-
-package_root[MacOSX10.7.pkg]='/SDKs/MacOSX10.7.sdk'
-
-# Excludes
-package_excludes[DeveloperToolsCLI.pkg]='
-Library
-'
-
-# Includes
-package_includes[DeveloperToolsSystemSupport.pkg]='
-private/etc/gdb.conf
-usr/bin/xcode-select
-usr/share/man/man1/xcode-select.1
-usr/share/xcode-select
-'
 
 payload_file_dir="$( mktemp -d -t "${script_name}" )"
 payload_data_dir="$( mktemp -d -t "${script_name}" )"
@@ -139,7 +136,7 @@ for package in "${packages[@]}"; do
     print-info "  ${package}"
 
     # Set full path to package.
-    package_path="${xcode_installer_packages}/${package}"
+    package_path="${disk_image_packages}/${package}"
 
     # Extract Payload file from package.
     (
@@ -181,14 +178,12 @@ for package in "${packages[@]}"; do
     done
 done
 
-# Homebrew needs to know the Xcode version.
-print-info 'Generating:'
-print-info '  Dummy Xcode Files'
-xcodebuild_file="${package_merge_dir}/usr/bin/xcodebuild"
-mkdir -p "${xcodebuild_file:h}"
-print '#!/bin/sh' >> "${xcodebuild_file}"
-print "echo 'Xcode ${xcode_version}'" >> "${xcodebuild_file}"
-chmod 755 "${xcodebuild_file}"
+print-info "Unmounting:"
+print-info "  ${disk_image_mount_point}"
+hdiutil unmount -quiet -force "${disk_image_mount_point}"
+if (( $? != 0 )); then
+  print-error "'${disk_image_mount_point}' cannot be unmounted"
+fi
 
 # Do not overwrite existing files.
 print-info 'Purging:'
